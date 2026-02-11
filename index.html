@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorry Guy 💖</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI', sans-serif;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: linear-gradient(135deg,#ff758c,#ff7eb3,#a18cd1);
+    background-size:400% 400%;
+    animation: gradientMove 8s ease infinite;
+    color:white;
+}
+
+@keyframes gradientMove{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+}
+
+.game-container{
+    width:90%;
+    max-width:500px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+    border-radius:25px;
+    padding:30px;
+    text-align:center;
+    box-shadow:0 25px 50px rgba(0,0,0,0.4);
+}
+
+h2{
+    margin-bottom:20px;
+}
+
+.progress-bar{
+    width:100%;
+    height:10px;
+    background:rgba(255,255,255,0.3);
+    border-radius:20px;
+    margin-bottom:20px;
+    overflow:hidden;
+}
+
+.progress{
+    height:100%;
+    width:0%;
+    background:white;
+    transition:0.5s;
+}
+
+.options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+button{
+    padding:12px;
+    border:none;
+    border-radius:15px;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+    background:white;
+    color:#333;
+    font-weight:600;
+}
+
+button:hover{
+    transform:scale(1.05);
+    background:#ffd369;
+}
+
+.shake{
+    animation: shake 0.4s;
+}
+
+@keyframes shake{
+    0%{transform:translateX(0);}
+    25%{transform:translateX(-5px);}
+    50%{transform:translateX(5px);}
+    75%{transform:translateX(-5px);}
+    100%{transform:translateX(0);}
+}
+
+.message{
+    margin-top:15px;
+    font-size:14px;
+}
+
+img, video{
+    width:100%;
+    border-radius:15px;
+    margin-top:15px;
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+    </div>
+
+    <h2 id="question"></h2>
+    <div class="options" id="options"></div>
+    <div class="message" id="message"></div>
+    <div id="media"></div>
+</div>
+
+<audio id="wrongSound">
+    <source src="wrong.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="correctSound">
+    <source src="correct.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+let step = 0;
+
+const gameFlow = [
+    {question:"You gotta go in the",
+     options:["And get","Gym","Angry at all my honesty"],
+     correct:"Gym"},
+     
+    {question:"Ehh sorry Ahh",
+     options:["De Paul","Deepal","Nepal"],
+     correct:"Nepal"},
+     
+    {question:"I just don’t want to say that you're",
+     options:["sorry","Really sorry","Apologize"],
+     correct:"sorry"},
+     
+    {question:"I know you say that for me",
+     options:["music","slient","sorry"],
+     correct:"slient"},
+     
+    {question:"That’s",
+     options:["Evertime","sometime","Anytime"],
+     correct:"sometime"},
+     
+    {question:"Cause I just love you the same",
+     options:["Last chances","Second chances","First chances"],
+     correct:"Second chances"},
+     
+    {question:"Is it too",
+     options:["Late","late","LAate","lATE"],
+     correct:"LAate"}
+];
+
+function updateProgress(){
+    let percent = (step / gameFlow.length) * 100;
+    document.getElementById("progress").style.width = percent + "%";
+}
+
+function loadStep(){
+    document.getElementById("media").innerHTML = "";
+
+    if(step >= gameFlow.length){
+        document.getElementById("question").innerText =
+        "💖 You met Sorry Guy 💖";
+        document.getElementById("options").innerHTML = "";
+        document.getElementById("message").innerText = "";
+        document.getElementById("progress").style.width = "100%";
+
+        document.getElementById("media").innerHTML = `
+            <video controls autoplay>
+                <source src="sorry.mp4" type="video/mp4">
+            </video>
+        `;
+        return;
+    }
+
+    const current = gameFlow[step];
+    document.getElementById("question").innerText = current.question;
+    document.getElementById("message").innerText = "";
+    const optionsDiv = document.getElementById("options");
+    optionsDiv.innerHTML = "";
+
+    current.options.forEach(option=>{
+        const btn = document.createElement("button");
+        btn.innerText = option;
+        btn.onclick = ()=>checkAnswer(option, btn);
+        optionsDiv.appendChild(btn);
+    });
+
+    updateProgress();
+}
+
+function fadeOutAudio(audio, duration = 1000){
+    let fadeInterval = 50;
+    let steps = duration / fadeInterval;
+    let volumeStep = audio.volume / steps;
+
+    let fade = setInterval(() => {
+        if(audio.volume - volumeStep > 0){
+            audio.volume -= volumeStep;
+        } else {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 1;
+            clearInterval(fade);
+        }
+    }, fadeInterval);
+}
+
+function checkAnswer(selected, btn){
+    const current = gameFlow[step];
+    const wrongAudio = document.getElementById("wrongSound");
+    const correctAudio = document.getElementById("correctSound");
+
+    if(selected === current.correct){
+
+        // Play correct sound
+        correctAudio.currentTime = 0;
+        correctAudio.volume = 1;
+        correctAudio.play();
+
+        // Small pop animation
+        btn.style.background = "#4CAF50";
+        btn.style.color = "white";
+
+        setTimeout(()=>{
+            step++;
+            loadStep();
+        },500);
+
+    }else{
+
+        btn.classList.add("shake");
+
+        // Play wrong sound
+        wrongAudio.currentTime = 0;
+        wrongAudio.volume = 1;
+        wrongAudio.play();
+
+        document.getElementById("message").innerText =
+        "❌ Sorry Guy says you can't say sorry!";
+
+        document.getElementById("media").innerHTML =
+        `<img src="sorry-guy.png">`;
+
+        // Fade out after 5 seconds
+        setTimeout(()=>{
+            fadeOutAudio(wrongAudio, 1000);
+        },5000);
+
+        setTimeout(()=>{
+            restartGame();
+        },2000);
+    }
+}
+
+
+
+function restartGame(){
+    step = 0;
+    updateProgress();
+    loadStep();
+}
+
+loadStep();
+</script>
+
+</body>
+</html>
