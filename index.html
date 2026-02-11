@@ -429,10 +429,9 @@ function checkAnswer(selected, btn){
         document.getElementById("media").innerHTML =
         `<img src="sorry-guy.png" style="width:100%;border-radius:15px;">`;
 
-        setTimeout(()=>{
-            fadeOutAudio(wrongAudio, 1000);
-        },5000);
-
+       setTimeout(()=>{
+    fadeOutAudio(wrongAudio, 500); 
+}, 4500); 
         setTimeout(()=>{
             restartGame();
         },2000);
