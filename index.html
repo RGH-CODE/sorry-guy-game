@@ -23,6 +23,7 @@ body{
     animation: gradientMove 8s ease infinite;
     color:white;
     overflow-x:hidden;
+    transition: background 0.5s;
 }
 
 @keyframes gradientMove{
@@ -104,6 +105,7 @@ h2{
     border-radius:20px;
     margin-bottom:20px;
     overflow:hidden;
+    transition: background 0.3s;
 }
 
 .progress{
@@ -183,6 +185,18 @@ img, video{
     z-index:10;
 }
 
+/* BOUNCE ANIMATION */
+@keyframes bounce {
+    0% { transform: translateY(50%) scale(1); }
+    30% { transform: translateY(45%) scale(1.05); }
+    50% { transform: translateY(50%) scale(1); }
+    70% { transform: translateY(55%) scale(0.95); }
+    100% { transform: translateY(50%) scale(1); }
+}
+.bounce {
+    animation: bounce 0.6s ease;
+}
+
 /* RESPONSIVE FOR SMALL DEVICES */
 @media (max-width:768px){
     #progressiveSorryGuy{
@@ -240,7 +254,7 @@ img, video{
 </audio>
 
 <script>
-// ---------- INTRO PAGE LOGIC ----------
+// ---------- INTRO PAGE ----------
 const introPage = document.getElementById('introPage');
 const startBtn = document.getElementById('startGameBtn');
 const introGuy = document.getElementById('introGuy');
@@ -248,7 +262,7 @@ const gameContainer = document.getElementById('gameContainer');
 const playerNameInput = document.getElementById('playerNameInput');
 
 let playerName = localStorage.getItem('playerName') || '';
-if(playerName) playerNameInput.value = playerName; // auto-suggest name
+if(playerName) playerNameInput.value = playerName;
 
 startBtn.addEventListener('click', () => {
     const name = playerNameInput.value.trim();
@@ -257,7 +271,6 @@ startBtn.addEventListener('click', () => {
     localStorage.setItem('playerName', playerName);
 
     introGuy.style.display = 'block';
-
     setTimeout(() => {
         introPage.style.opacity = 0;
         introPage.style.transform = 'scale(0.95)';
@@ -270,60 +283,50 @@ startBtn.addEventListener('click', () => {
     },1500);
 });
 
-// ---------- GAME LOGIC ----------
+// ---------- GAME ----------
 let step = 0;
 
 const gameFlow = [
-    {question:"You gotta go in the",
-     options:["And get","Gym","Angry at all my honesty"],
-     correct:"Gym"},
-     
-    {question:"Ehh sorry Ahh",
-     options:["De Paul","Deepal","Nepal"],
-     correct:"Nepal"},
-     
-    {question:"I just don’t want to say that you're",
-     options:["sorry","Really sorry","Apologize"],
-     correct:"sorry"},
-     
-    {question:"I know you say that for me",
-     options:["music","slient","sorry"],
-     correct:"slient"},
-     
-    {question:"That’s",
-     options:["sometime","Everytime","Anytime"],
-     correct:"sometime"},
-     
-    {question:"Cause I just love you the same",
-     options:["Last chances","Second chances","First chances"],
-     correct:"Second chances"},
-     
-    {question:"Is it too",
-     options:["Late","late","lATE","LAate"],
-     correct:"LAate"}
+    {question:"You gotta go in the", options:["And get","Gym","Angry at all my honesty"], correct:"Gym"},
+    {question:"Ehh sorry Ahh", options:["De Paul","Deepal","Nepal"], correct:"Nepal"},
+    {question:"I just don’t want to say that you're", options:["sorry","Really sorry","Apologize"], correct:"sorry"},
+    {question:"I know you say that for me", options:["music","slient","sorry"], correct:"slient"},
+    {question:"That’s", options:["sometime","Everytime","Anytime"], correct:"sometime"},
+    {question:"Cause I just love you the same", options:["Last chances","Second chances","First chances"], correct:"Second chances"},
+    {question:"Is it too", options:["Late","late","lATE","LAate"], correct:"LAate"}
 ];
 
-function updateProgress(){
-    let percent = (step / gameFlow.length) * 100;
-    document.getElementById("progress").style.width = percent + "%";
-}
-
-// ---------- COMPLETION DASHBOARD ----------
+// Dashboard completions
 let completions = JSON.parse(localStorage.getItem('completions')) || {};
 document.getElementById('timesCompleted').innerText = completions[playerName] || 0;
 
-// ---------- PROGRESSIVE IMAGE ----------
+// Progressive Sorry Guy image
 const progressiveImg = document.getElementById('progressiveSorryGuy');
 function updateSorryGuyImage(){
     const totalSteps = gameFlow.length;
-    const stepHeight = 150 / totalSteps; // medium size
+    const stepHeight = 150 / totalSteps;
     progressiveImg.style.height = step * stepHeight + 'px';
 }
 
-// ---------- LOAD STEP ----------
+// Update background gradient per step
+function updateBackground(){
+    const totalSteps = gameFlow.length;
+    const hue = Math.floor((step / totalSteps) * 360);
+    document.body.style.background = `linear-gradient(135deg, hsl(${hue},70%,70%), hsl(${(hue+60)%360},70%,70%), hsl(${(hue+120)%360},70%,70%))`;
+}
+
+// Update progress bar color
+function setProgressBarColor(isCorrect){
+    const progressDiv = document.getElementById('progress');
+    progressDiv.style.background = isCorrect ? '#4CAF50' : '#FF4C4C';
+    setTimeout(()=>{ progressDiv.style.background='white'; }, 500);
+}
+
+// Load step
 function loadStep(){
     document.getElementById("media").innerHTML = "";
     updateSorryGuyImage();
+    updateBackground();
 
     if(step >= gameFlow.length){
         document.getElementById("question").innerText = `💖 ${playerName} met Sorry Guy 💖`;
@@ -343,10 +346,8 @@ function loadStep(){
         localStorage.setItem('completions', JSON.stringify(completions));
         document.getElementById('timesCompleted').innerText = completions[playerName];
 
-        launchConfetti();
-
-        // Fully reveal image
         progressiveImg.style.height = '150px';
+        launchConfetti();
 
         document.getElementById("replayBtn").addEventListener("click", () => {
             step = 0;
@@ -354,7 +355,6 @@ function loadStep(){
             progressiveImg.style.height = '0px';
             loadStep();
         });
-
         return;
     }
 
@@ -375,12 +375,13 @@ function loadStep(){
     updateProgress();
 }
 
-// ---------- AUDIO FUNCTIONS ----------
+// ---------- AUDIO ----------
+let wrongAudioTimeout;
 function fadeOutAudio(audio, duration = 1000){
     let fadeInterval = 50;
     let steps = duration / fadeInterval;
-
     let volumeStep = audio.volume / steps;
+
     let fade = setInterval(() => {
         if(audio.volume - volumeStep > 0){
             audio.volume -= volumeStep;
@@ -399,6 +400,11 @@ function checkAnswer(selected, btn){
     const wrongAudio = document.getElementById("wrongSound");
     const correctAudio = document.getElementById("correctSound");
 
+    if(wrongAudioTimeout) clearTimeout(wrongAudioTimeout);
+    wrongAudio.pause();
+    wrongAudio.currentTime = 0;
+    wrongAudio.volume = 1;
+
     if(selected === current.correct){
         correctAudio.currentTime = 0;
         correctAudio.volume = 1;
@@ -408,37 +414,42 @@ function checkAnswer(selected, btn){
         btn.style.color = "white";
 
         step++;
-        updateSorryGuyImage(); // progressive image
+        updateSorryGuyImage();
 
-        setTimeout(()=>{
-            loadStep();
-        },500);
+        // BOUNCE
+        progressiveImg.classList.remove('bounce');
+        void progressiveImg.offsetWidth;
+        progressiveImg.classList.add('bounce');
+
+        setProgressBarColor(true);
+        launchConfetti();
+        updateBackground();
+
+        setTimeout(()=>{ loadStep(); },500);
 
     }else{
         btn.classList.add("shake");
-        wrongAudio.currentTime = 0;
-        wrongAudio.volume = 1;
         wrongAudio.play();
 
         document.getElementById("message").innerText =
         "❌ Sorry Guy says you can't say sorry!";
-
-        // Reset progressive image
         progressiveImg.style.height = '0px';
 
         document.getElementById("media").innerHTML =
         `<img src="sorry-guy.png" style="width:100%;border-radius:15px;">`;
 
-       setTimeout(()=>{
-    fadeOutAudio(wrongAudio, 500); 
-}, 4500); 
-        setTimeout(()=>{
-            restartGame();
-        },2000);
+        wrongAudioTimeout = setTimeout(()=>{
+            wrongAudio.pause();
+            wrongAudio.currentTime = 0;
+        }, 5000);
+
+        setProgressBarColor(false);
+
+        setTimeout(()=>{ restartGame(); },2000);
     }
 }
 
-// ---------- RESTART GAME ----------
+// ---------- RESTART ----------
 function restartGame(){
     step = 0;
     updateProgress();
@@ -446,7 +457,13 @@ function restartGame(){
     loadStep();
 }
 
-// ---------- CONFETTI ----------
+// ---------- PROGRESS BAR ----------
+function updateProgress(){
+    let percent = (step / gameFlow.length) * 100;
+    document.getElementById("progress").style.width = percent + "%";
+}
+
+// ---------- CONFETTI / HEARTS ----------
 function launchConfetti(){
     const hearts = document.getElementById('hearts');
     if(!hearts) return;
@@ -470,6 +487,7 @@ function launchConfetti(){
         setTimeout(()=>heart.remove(), duration*1000);
     }
 }
+
 </script>
 </body>
 </html>
